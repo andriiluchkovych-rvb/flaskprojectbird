@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 class="title">
+        Welcome, {{ name }}!
+    </h1>
+    
+    <form method="post" action="{{ url_for('auth.success') }}" enctype="multipart/form-data">
+        <div class="field">
+            <label class="label">Завантажити зображення:</label>
+            <div class="control">
+                <input type="file" name="file" accept="image/*" required>
+            </div>
+        </div>
+        <div class="field">
+            <div class="control">
+                <button type="submit" class="button is-primary">Завантажити</button>
+            </div>
+        </div>
+    </form>
+
+    {% if filename %}
+        <div class="mt-4">
+            <h4 class="title is-5">Ваше зображення:</h4>
+            <img src="{{ url_for('static', filename=filename) }}" 
+                 alt="Завантажене зображення" 
+                 style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
