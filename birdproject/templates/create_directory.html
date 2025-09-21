@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="column is-8 is-offset-2">
+    <h1 class="title">
+        Create Directory
+    </h1>
+    <h2 class="subtitle">
+        Create and manage directories for your projects
+    </h2>
+
+    <div class="box">
+        <div class="field">
+            <label class="label">Directory Name</label>
+            <div class="control">
+                <input class="input" type="text" id="directoryName" placeholder="Enter directory name" maxlength="50">
+            </div>
+            <p class="help">Choose a name for your new directory (letters, numbers, and underscores only)</p>
+        </div>
+
+        <div class="field">
+            <div class="control">
+                <button class="button is-primary" onclick="createDirectory()">
+                    <span class="icon">
+                        <i class="fas fa-folder-plus"></i>
+                    </span>
+                    <span>Create Directory</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="box">
+        <h3 class="title is-4">Your Directories</h3>
+        <div id="directoriesList">
+            <button class="button is-light" onclick="loadDirectories()">
+                <span class="icon">
+                    <i class="fas fa-refresh"></i>
+                </span>
+                <span>Load Directories</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div id="messageContainer"></div>
+</div>
+
+<script>
+function createDirectory() {
+    const directoryName = document.getElementById('directoryName').value.trim();
+    
+    if (!directoryName) {
+        showMessage('Please enter a directory name', 'danger');
+        return;
+    }
+
+    // Validate directory name
+    const validName = /^[a-zA-Z0-9_]+$/.test(directoryName);
+    if (!validName) {
+        showMessage('Directory name can only contain letters, numbers, and underscores', 'danger');
+        return;
+    }
+
+    fetch('/api/create-directory', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            directory_name: directoryName
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(data.message, 'success');
+            document.getElementById('directoryName').value = '';
+            loadDirectories();
+        } else {
+            showMessage(data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        showMessage('Error creating directory: ' + error, 'danger');
+    });
+}
+
+function loadDirectories() {
+    fetch('/api/list-directories')
+    .then(response => response.json())
+    .then(data => {
+        const container = document.getElementById('directoriesList');
+        
+        if (data.success) {
+            if (data.directories.length === 0) {
+                container.innerHTML = '<p class="has-text-grey">No directories created yet.</p>';
+            } else {
+                let html = '<div class="columns is-multiline">';
+                data.directories.forEach(dir => {
+                    const createdDate = new Date(dir.created * 1000).toLocaleDateString();
+                    html += `
+                        <div class="column is-one-third">
+                            <div class="card">
+                                <div class="card-content">
+                                    <div class="media">
+                                        <div class="media-left">
+                                            <figure class="image is-48x48">
+                                                <i class="fas fa-folder fa-2x has-text-warning"></i>
+                                            </figure>
+                                        </div>
+                                        <div class="media-content">
+                                            <p class="title is-6">${dir.name}</p>
+                                            <p class="subtitle is-7">Created: ${createdDate}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            }
+        } else {
+            container.innerHTML = `<p class="has-text-danger">Error loading directories: ${data.message}</p>`;
+        }
+    })
+    .catch(error => {
+        document.getElementById('directoriesList').innerHTML = 
+            `<p class="has-text-danger">Error loading directories: ${error}</p>`;
+    });
+}
+
+function showMessage(message, type) {
+    const container = document.getElementById('messageContainer');
+    container.innerHTML = `
+        <div class="notification is-${type}">
+            <button class="delete" onclick="this.parentElement.style.display='none'"></button>
+            ${message}
+        </div>
+    `;
+    
+    // Auto-hide success messages after 3 seconds
+    if (type === 'success') {
+        setTimeout(() => {
+            container.innerHTML = '';
+        }, 3000);
+    }
+}
+
+// Load directories when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadDirectories();
+});
+</script>
+{% endblock %}
